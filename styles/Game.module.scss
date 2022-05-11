@@ -1,0 +1,44 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.button, .over {
+    display: flex;
+    width: 250px;
+    height: 100px;
+    background-color: gray;
+    justify-content: center;
+    align-items: center;
+    font-size: 30px;
+    border-radius: 50px;
+    margin-top: 30px;
+    margin-bottom: 30px;
+    transition: background-color 200ms ease-in-out;
+
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: -moz-none;
+    -o-user-select: none;
+    user-select: none;
+    cursor: pointer;
+}
+
+.button:hover {
+    background-color: lightskyblue;
+}
+
+.over:hover {
+    background-color: red;
+}
+
+.hidden {
+    display: none;
+}
+
+.pig {
+    color: pink;
+    font-size: 75px;
+}
