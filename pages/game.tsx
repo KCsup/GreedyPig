@@ -44,10 +44,15 @@ const Game: NextPage = () => {
     }
 
     const nextTurn = () => {
+        if(!anyPlaying) {
+            setOver(true)
+            return
+        }
+
         let newTurn = turn + 1
         while(players[newTurn] == undefined || !players[newTurn].playing) {
             if(newTurn >= playerCount) newTurn = 0
-            else newTurn++
+            else newTurn += 1
         }
         
         setTurn(newTurn)
