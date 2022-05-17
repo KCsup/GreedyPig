@@ -8,7 +8,6 @@ class Player {
     score: number
     playing: boolean
 
-
     constructor(id: number, score: number) {
         this.id = id
         this.score = score
@@ -18,7 +17,7 @@ class Player {
 
 const Game: NextPage = () => {
 
-    const playerCount = 2
+    const playerCount = 4
 
     // Constant
     const [players, setPlayers] = useState(() => {
@@ -48,15 +47,12 @@ const Game: NextPage = () => {
         return newRoll
     }
 
-    const nextTurn = () => {
-        let newTurn = playerTurn + 1
-
-        if(newTurn == playerCount) {
-            newTurn = 0
+    const nextTurn = (currentPlayers: Player[]) => {
+        if(playerTurn == mostPlaying(currentPlayers)) {
             let nRoll = newRoll(roundGain)
 
             if(nRoll == 4) {
-                let newPlayers = [...players]
+                let newPlayers = [...currentPlayers]
                 for(let player of newPlayers)
                     if(player.playing) player.score -= roundGain
                 
@@ -64,15 +60,28 @@ const Game: NextPage = () => {
                 setRoundOver(true)
             }
         }
-        
-        while(players[newTurn] == undefined || !players[newTurn].playing) {
-            if(newTurn == playerCount) newTurn = 0
+
+        let newTurn = playerTurn + 1
+
+        while(newTurn == currentPlayers.length || !currentPlayers[newTurn].playing) {
+            if(newTurn == currentPlayers.length) newTurn = 0
+
+            if(currentPlayers[newTurn].playing) break
+            
             newTurn++
         }
+
+        if(newTurn >= playerCount) newTurn = 0
         
         setPlayerTurn(newTurn)
+    }
 
-        return newTurn
+    // Util
+    const mostPlaying = (currentPlayers: Player[]) => {
+        for(let i = currentPlayers.length - 1; i >= 0 ; i--)
+            if(currentPlayers[i].playing) return currentPlayers[i].id
+
+        return undefined
     }
 
     const anyPlaying = (p: Player[]) => {
@@ -88,11 +97,12 @@ const Game: NextPage = () => {
     
     return (
         <div className={styles.container}>
+            <h1>Round {round}</h1>
             <Die roll={roll} />
             
             <div className={styles.scoreboard}>
                 {players.map(player => {
-                    return <h2>Player {player.id + 1}: {player.score} ({player.playing ? "Playing" : "Not Playing"})</h2>
+                    return <h2 key={player.id}>Player {player.id + 1}: {player.score} ({player.playing ? "Playing" : "Not Playing"})</h2>
                 })}
             </div>
             
@@ -107,6 +117,7 @@ const Game: NextPage = () => {
                             setPlayers(newPlayers)
                             setRoundGain(0)
                             setRoundOver(false)
+                            setRound(round + 1)
                             setPlayerTurn(0)
                             newRoll(0)
                         }}>Next Round</a>
@@ -120,7 +131,7 @@ const Game: NextPage = () => {
 
                             setPlayers(newPlayers)
                             
-                            let newTurn = nextTurn()
+                            nextTurn(newPlayers)
                         }}>Keep Playing</a>
 
                         <a className={styles.button} onClick={() => {
@@ -130,12 +141,8 @@ const Game: NextPage = () => {
                             if(!anyPlaying(newPlayers)) {
                                 setRoundOver(true)
                             } else {
-                                let newTurn = nextTurn()
-                                while(!newPlayers[newTurn].playing) {
-                                    newTurn = nextTurn()
-                                }
+                                nextTurn(newPlayers)
                             }
-
                             setPlayers(newPlayers)
                         }}>Drop Out</a>
                     </div>
