@@ -50,7 +50,7 @@ const Game: NextPage = () => {
 
     const nextTurn = () => {
         let newTurn = playerTurn + 1
-        
+
         if(newTurn == playerCount) {
             newTurn = 0
             let nRoll = newRoll(roundGain)
@@ -64,7 +64,12 @@ const Game: NextPage = () => {
                 setRoundOver(true)
             }
         }
-
+        
+        while(players[newTurn] == undefined || !players[newTurn].playing) {
+            if(newTurn == playerCount) newTurn = 0
+            newTurn++
+        }
+        
         setPlayerTurn(newTurn)
 
         return newTurn
