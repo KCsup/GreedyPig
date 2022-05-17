@@ -1,5 +1,4 @@
 import { NextPage } from "next";
-import Head from "next/head";
 import { useState } from "react";
 import Die from "../components/Die";
 import styles from "../styles/Game.module.scss";
@@ -21,124 +20,129 @@ const Game: NextPage = () => {
 
     const playerCount = 2
 
+    // Constant
     const [players, setPlayers] = useState(() => {
         let players: Player[] = []
         for(let i = 0; i < playerCount; i++) players.push(new Player(i, 0))
 
         return players
     })
-    
+
+    // Round Based
     const [roll, setRoll] = useState(0)
-    const [turn, setTurn] = useState(0)
-    const [turnNumber, setTurnNumber] = useState(1)
-    const [over, setOver] = useState(false)
-    const [gained, setGained] = useState(0)
-    const [started, setStarted] = useState(false)
+    const [playerTurn, setPlayerTurn] = useState(0)
+    const [round, setRound] = useState(1)
 
-    const anyPlaying = () => {
-        let any = false
+    // Game State
+    const [roundOver, setRoundOver] = useState(false)
+    const [gameStarted, setGameStarted] = useState(false)
 
-        for(const player of players) if(player.playing) any = true
+    // Temp
+    const [roundGain, setRoundGain] = useState(0)
 
-        return any
+    const newRoll = (currentGain: number) => {
+        const newRoll = Math.floor(Math.random() * 6) + 1
+        setRoll(newRoll)
+        setRoundGain(currentGain + newRoll)
+
+        return newRoll
     }
 
     const nextTurn = () => {
-        if(!anyPlaying) {
-            setOver(true)
-            return
+        let newTurn = playerTurn + 1
+        
+        if(newTurn == playerCount) {
+            newTurn = 0
+            let nRoll = newRoll(roundGain)
+
+            if(nRoll == 4) {
+                let newPlayers = [...players]
+                for(let player of newPlayers)
+                    if(player.playing) player.score -= roundGain
+                
+                setPlayers(newPlayers)
+                setRoundOver(true)
+            }
         }
 
-        let newTurn = turn + 1
-        while(players[newTurn] == undefined || !players[newTurn].playing) {
-            if(newTurn >= playerCount) newTurn = 0
-            else newTurn += 1
-        }
-        
-        setTurn(newTurn)
+        setPlayerTurn(newTurn)
+
+        return newTurn
     }
 
-    const nextRoll = () => {
-        const newRoll = Math.floor(Math.random() * 6) + 1
-        setRoll(newRoll)
-        
-        if(newRoll == 4) {
-            let newPlayers = [...players]
-            for(let player of newPlayers) {
-                if(!player.playing) return
-
-                player.score -= gained
-            }
-            
-            setPlayers(newPlayers)
-            setOver(true)
-        }
-        else {
-            let newPlayers = [...players]
-            for(let player of newPlayers) {
-                if(!player.playing) return
-
-                player.score += newRoll
+    const anyPlaying = (p: Player[]) => {
+        let any = false;
+        for(let player of p) 
+            if(player.playing) {
+                any = true
+                break
             }
 
-            setPlayers(newPlayers)
-            setGained(gained + newRoll)
-        }
+        return any
     }
-
+    
     return (
         <div className={styles.container}>
-            <Head>
-                <title>Game</title>
-                <link rel="icon" href="/favicon.ico" />
-            </Head>
-
+            <Die roll={roll} />
+            
             <div className={styles.scoreboard}>
-                <h2>Scores:</h2>
                 {players.map(player => {
-                    return <h3>Player {player.id + 1}: {player.score}</h3>
+                    return <h2>Player {player.id + 1}: {player.score} ({player.playing ? "Playing" : "Not Playing"})</h2>
                 })}
             </div>
             
-            <h1>Player {turn + 1}'s Turn</h1>
-            <h2>Turn {turnNumber}</h2>
-            
-            <Die roll={roll} />
+            {gameStarted ? 
+                roundOver ? (
+                    <div>
+                        <a className={styles.button} onClick={() => {
+                            let newPlayers = [...players]
+                            for(let p of newPlayers)
+                                if(!p.playing) p.playing = true
 
-            <a className={started ? styles.hidden : styles.button} onClick={() => {
-                nextRoll()
-                setStarted(true)
-            }}>Start Game</a>
+                            setPlayers(newPlayers)
+                            setRoundGain(0)
+                            setRoundOver(false)
+                            setPlayerTurn(0)
+                            newRoll(0)
+                        }}>Next Round</a>
+                    </div>
+                ) : (
+                    <div>
+                        <h1>Player {playerTurn + 1}'s Turn</h1>
+                        <a className={styles.button} onClick={() => {
+                            let newPlayers = [...players]
+                            newPlayers[playerTurn].score += roll
 
-            {/* <a className={started ? over ? styles.over : styles.button : styles.hidden} onClick={() => {
-                if(over) return
+                            setPlayers(newPlayers)
+                            
+                            let newTurn = nextTurn()
+                        }}>Keep Playing</a>
 
-                nextRoll()
+                        <a className={styles.button} onClick={() => {
+                            let newPlayers = [...players]
+                            newPlayers[playerTurn].playing = false
+                            
+                            if(!anyPlaying(newPlayers)) {
+                                setRoundOver(true)
+                            } else {
+                                let newTurn = nextTurn()
+                                while(!newPlayers[newTurn].playing) {
+                                    newTurn = nextTurn()
+                                }
+                            }
 
-                
-            }}>Roll</a> */}
-
-            <a className={started ? over ? styles.hidden : styles.button : styles.hidden } onClick={() => {
-                // if(over) return
-
-                nextTurn()
-            }}>Keep Playing</a>
-
-
-            <a className={started ? over ? styles.hidden : styles.button : styles.hidden } onClick={() => {
-                // if(over) return
-                let newPlayers = [...players]
-                newPlayers[turn].playing = false
-
-                setPlayers(newPlayers)
-                nextTurn()
-            }}>Stop Playing</a>
-            <a className={over ? styles.button : styles.hidden} onClick={() => {
-                nextRoll()
-                setOver(false)
-                setGained(0)
-            }}>Next Turn</a>
-            <h2 className={over ? styles.pig : styles.hidden}>Greedy Pig!</h2>
+                            setPlayers(newPlayers)
+                        }}>Drop Out</a>
+                    </div>
+                ) : (
+                    <div>
+                        <a className={styles.button} onClick={() => {
+                            setGameStarted(true)
+                            newRoll(0)
+                        }}>Start Game</a>
+                    </div>
+                )
+            }            
         </div>
     )
 }
